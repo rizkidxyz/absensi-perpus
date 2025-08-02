@@ -33,7 +33,7 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-INSERT INTO `users` (`id`, `role`, `name`, `email`, `pass`, `created_at`) VALUES
+INSERT INTO `users` (`id`, `role`, `name`, `email`, `pass`) VALUES
 (4, 'admin', 'admin', 'admin@mail.com', 'admin#123#');
 
 ALTER TABLE `pengunjung`
