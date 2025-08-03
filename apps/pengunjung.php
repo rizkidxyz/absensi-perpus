@@ -3,7 +3,6 @@ session_start();
 require_once '../config.php';
 require_once '../utils/utils.php';
 
-$today = date("Y-m-d");
 $tgl_filter = $_GET['tanggal'] ?? '';
 $bulan_filter = $_GET['bulan'] ?? '';
 $range_awal = $_GET['mulai'] ?? '';
@@ -24,11 +23,11 @@ if ($range_awal && $range_akhir) {
         "MONTH(updated)" => date('m', strtotime($bulan_filter)),
         "YEAR(updated)" => date('Y', strtotime($bulan_filter)),
     ]);
-} elseif ($semua) {
+} elseif($semua){
     $pengunjung = select("pengunjung", [], true, "updated DESC");
-} else {
-    $pengunjung = select("pengunjung", [], true, "updated DESC", null, [
-        "DATE(updated)" => $today
+}else{
+  $pengunjung = select("pengunjung", [], true, "updated DESC", null, [
+        "DATE(updated)" => date("Y-m-d", strtotime($waktu_sekarang))
     ]);
 }
 
@@ -135,16 +134,18 @@ function idTime($datetime) {
                 <td><?= idTime($p['updated']) ?></td>
                 <td class="text-center">
                   <?php
-                  if(empty($pnjmn["tgl_kembali"]) && $_SESSION["role"]==="admin"){
+                  if($_SESSION["role"]==="admin" && empty($pnjmn["tgl_kembali"])){
+                    echo("<a href='edit-pengunjung.php?id=".$p['id']."' class='underline text-white bg-gray-600 p-1'>Edit</a>");
+                  }elseif($p["pinjam"]==="true" && !empty($pnjmn["tgl_kembali"])){
+                  echo("<span class='p-1 bg-green-500 text-white'>dikembalikan</span>");
+                  }elseif($p["pinjam"]==="true" && empty($pnjmn["tgl_kembali"])){
+                    echo("<span class='p-1 bg-yellow-500 text-white'>dipinjam</span>");
+                  }elseif($p["pinjam"]==="false" && !empty($pnjmn["tgl_kembali"])){
+                    echo("<span class='p-1 bg-violet-500 text-white'>batal pinjam/dikembalikan</span>");
+                  }else{
+                    echo("<span class='p-1 bg-blue-500 text-white'>berkunjung</span>");
+                  }
                   ?>
-                  <a class="p-0.5 bg-yellow-500 text-white rounded" href="edit-pengunjung.php?id=<?= $p['id'] ?>">Edit</a>
-                  <?php } elseif(empty($pnjmn["tgl_kembali"]) && $p["pinjam"]==="true") { ?>
-                    <span class="p-0.5 bg-orange-500 text-white rounded">Dipinjam</span>
-                    <?php }elseif($p["pinjam"]==="false"){ ?>
-                    <span class="p-0.5 bg-blue-500 text-white rounded">Berkunjung</span>
-                  <?php }else{ ?>
-                    <span class="p-0.5 bg-green-500 text-white rounded">Dikembalikan</span>
-                  <?php } ?>
                 </td>
               </tr>
             <?php endforeach ?>

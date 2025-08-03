@@ -2,8 +2,7 @@
 session_start();
 require_once '../config.php';
 require_once '../utils/utils.php';
-date_default_timezone_set('Asia/Jakarta');
-$today = date("Y-m-d");
+
 $tgl_filter = $_GET['tanggal'] ?? '';
 $bulan_filter = $_GET['bulan'] ?? '';
 $range_awal = $_GET['mulai'] ?? '';
@@ -25,11 +24,11 @@ if ($range_awal && $range_akhir) {
         "MONTH(updated)" => date('m', strtotime($bulan_filter)),
         "YEAR(updated)" => date('Y', strtotime($bulan_filter)),
     ]);
-} elseif ($semua) {
+} elseif($semua){
     $pinjaman = select("pinjaman", [], true, "updated DESC");
-} else {
+}else{
     $pinjaman = select("pinjaman", [], true, "updated DESC", null, [
-        "DATE(updated)" => $today
+        "DATE(updated)" => date("Y-m-d", strtotime($waktu_sekarang))
     ]);
 }
 
@@ -40,7 +39,7 @@ function idTime($datetime) {
 }
 if (isset($_POST["update"])) {
   $id_update = $_POST["id-update"];
-  $msg = update("pinjaman", ["tgl_kembali"=>date("Y-m-d H:i:s"), "updated"=>date("Y-m-d H:i:s")], ["id" => $id_update]) ? "Berhasil update" : "Gagal update";
+  $msg = update("pinjaman", ["tgl_kembali"=>$waktu_sekarang, "updated"=>$waktu_sekarang], ["id" => $id_update]) ? "Berhasil update" : "Gagal update";
   echo "<script>alert('$msg');location.href='/apps/pinjaman.php';</script>";
 }
 ?>

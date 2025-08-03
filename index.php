@@ -11,7 +11,9 @@ if(isset($_POST["submit"])){
     "nama"=>$nama,
     "kelas"=>$kelas,
     "jk"=>$jk,
-    "pinjam"=>$pinjam
+    "pinjam"=>$pinjam,
+    "waktu_kunjung"=>$waktu_sekarang,
+    "updated"=>$waktu_sekarang
   ];
   
   if(insert("pengunjung", $data)){
@@ -28,7 +30,9 @@ if(isset($_POST["submit"])){
         "kode_buku" => $kode_buku,
         "jenis_buku" => $jenis_buku,
         "judul_buku" => $judul_buku,
-        "qty" => $qty
+        "qty" => $qty,
+        "tgl_pinjam"=> $waktu_sekarang,
+        "updated"=> $waktu_sekarang
       ];
       
       if(insert("pinjaman", $data_pinjam)){

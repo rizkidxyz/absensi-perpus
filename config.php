@@ -3,7 +3,8 @@ $host = '0.0.0.0'; //Ganti dengan host db kamu
 $dbname = 'perpus'; // nama db
 $user = 'root'; // user db kalian
 $pass = 'root'; //sesuaikan dengan password db kalian
-date_default_timezone_set('Asia/Jakarta');
+$waktu_sekarang = (new DateTime("now", new DateTimeZone('Asia/Jakarta')))->format("Y-m-d H:i:s");
+
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

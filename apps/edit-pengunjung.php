@@ -9,6 +9,10 @@ require_once("../utils/utils.php");
 
 $id = $_GET["id"];
 $s = select("pengunjung", ["id"=>$id], false);//ambil detail pengunjung
+if(empty($s)){
+  header("Location: /");
+  exit;
+}
 $sp = select("pinjaman", ["id_pengunjung"=>$id], false);//ambil detail buku
 if(isset($_POST["update"])){
   $nama = htmlspecialchars($_POST["nama"]);
@@ -21,7 +25,7 @@ if(isset($_POST["update"])){
     "kelas"=>$kelas,
     "jk"=>$jk,
     "pinjam"=>$pinjam,
-    "updated"=>date("Y-m-d H:i:s")
+    "updated"=>$waktu_sekarang
   ];
   
   if(update("pengunjung", $data, ["id"=>$id])){
@@ -38,7 +42,7 @@ if(isset($_POST["update"])){
         "jenis_buku" => $jenis_buku,
         "judul_buku" => $judul_buku,
         "qty" => $qty,
-        "updated"=>date("Y-m-d H:i:s")
+        "updated"=>$waktu_sekarang
       ];
       if($sp){
         if(update("pinjaman", $data_update, ["id_pengunjung"=>$id])){
@@ -54,6 +58,8 @@ if(isset($_POST["update"])){
         "kode_buku" => $kode_buku,
         "jenis_buku" => $jenis_buku,
         "judul_buku" => $judul_buku,
+        "tgl_pinjam" => $waktu_sekarang,
+        "updated" => $waktu_sekarang,
         "qty" => $qty
       ];
       if(insert("pinjaman", $data_insert)){
@@ -67,8 +73,8 @@ if(isset($_POST["update"])){
     
     if($pinjam==="false" && !empty($sp)){
       $data_gj = [
-        "tgl_kembali"=>date("Y-m-d H:i:s"),
-        "updated"=>date("Y-m-d H:i:s")
+        "tgl_kembali"=>$waktu_sekarang,
+        "updated"=>$waktu_sekarang
       ];
       if(update("pinjaman", $data_gj, ["id_pengunjung"=>$id])){
         echo("<script>alert('berhasil update, terimakasih $nama_modus sudah mengembalikan buku 😀'); window.location='/'</script>");
