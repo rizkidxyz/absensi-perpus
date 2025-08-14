@@ -119,6 +119,7 @@ foreach ($tingkatan as $tingkat) {
     </div>
   </div>
   <audio id="notif-audio" src="done.mp3" preload="auto" class="hidden"></audio>
+  <!--
   <script>
     const pinjamSelect = document.getElementById("pinjamSelect");
     const pinjamFields = document.getElementById("pinjamFields");
@@ -263,7 +264,189 @@ foreach ($tingkatan as $tingkat) {
     });
     
     const now = new Date();
-    document.getElementById("today").textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric', year: '2-digit' }).replace(/\//g, '-');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById("today").textContent = now.toLocaleDateString('id-ID', options);
   </script>
+  -->
+  <script>
+const pinjamSelect = document.getElementById("pinjamSelect");
+const pinjamFields = document.getElementById("pinjamFields");
+let html5QrcodeScanner = null;
+
+function playNotification() {
+  const audio = document.getElementById("notif-audio");
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch((err) => {
+      console.warn("Gagal memutar audio:", err);
+    });
+  }
+}
+
+function createInputField({ name, type = "text", placeholder = "", required = false }) {
+  const wrapper = document.createElement("div");
+  const input = document.createElement("input");
+  input.type = type;
+  input.name = name;
+  input.placeholder = placeholder;
+  input.required = required;
+  input.className = "w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+  wrapper.appendChild(input);
+  return wrapper;
+}
+
+function createSelectField({ name, required = false }) {
+  const wrapper = document.createElement("div");
+  const select = document.createElement("select");
+  select.name = name;
+  select.required = required;
+  select.className = "w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+
+  const options = [
+    { value: "", text: "-- Pilih Jenis Buku --", disabled: true, selected: true },
+    { value: "Mapel", text: "Mapel" },
+    { value: "Non-Mapel", text: "Non-Mapel" }
+  ];
+
+  options.forEach(opt => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = opt.text;
+    if (opt.disabled) option.disabled = true;
+    if (opt.selected) option.selected = true;
+    select.appendChild(option);
+  });
+
+  wrapper.appendChild(select);
+  return wrapper;
+}
+
+function generatePinjamFields() {
+  pinjamFields.innerHTML = "";
+  const wrapperKode = document.createElement("div");
+  wrapperKode.className = "space-y-2";
+
+  const inputKode = document.createElement("input");
+  inputKode.type = "text";
+  inputKode.name = "kode_buku";
+  inputKode.placeholder = "Kode Buku";
+  inputKode.id = "kode_buku_result";
+  inputKode.className = "w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+
+  const scanBtn = document.createElement("button");
+  scanBtn.type = "button";
+  scanBtn.id = "start-scan-btn";
+  scanBtn.innerHTML = "📷 Scan Barcode";
+  scanBtn.className = "w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium";
+
+  wrapperKode.appendChild(inputKode);
+  wrapperKode.appendChild(scanBtn);
+  pinjamFields.appendChild(wrapperKode);
+  pinjamFields.appendChild(createSelectField({ name: "jenis_buku", required: true }));
+  pinjamFields.appendChild(createInputField({ name: "judul_buku", placeholder: "Judul Buku", required: true }));
+  pinjamFields.appendChild(createInputField({ name: "qty", placeholder: "Jumlah", type: "number", required: true }));
+
+  setupScanner();
+}
+
+function setupScanner() {
+  const modal = document.getElementById("scanModal");
+  const scanBtn = document.getElementById("start-scan-btn");
+  const closeScan = document.getElementById("closeScan");
+  const stopScan = document.getElementById("stopScan");
+  const inputTarget = document.getElementById("kode_buku_result");
+  const qrReader = document.getElementById("qr-reader");
+  const judulInput = pinjamFields.querySelector('input[name="judul_buku"]');
+
+  function onScanSuccess(decodedText, decodedResult) {
+    if (decodedText) {
+      playNotification();
+      inputTarget.value = decodedText;
+
+      // Tambahan: fetch judul buku otomatis
+      if (judulInput) {
+        judulInput.value="";
+        judulInput.placeholder = "Mencari judul...🔍";
+        fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${decodedText}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.totalItems && data.items.length > 0) {
+              judulInput.value = data.items[0].volumeInfo.title || "";
+            } else {
+              // fallback ke Open Library
+              return fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${decodedText}&format=json&jscmd=data`)
+                .then(res => res.json())
+                .then(olData => {
+                  const key = `ISBN:${decodedText}`;
+                  if (olData[key] && olData[key].title) {
+                    judulInput.value = olData[key].title;
+                  } else {
+                    judulInput.value = "";
+                    judulInput.placeholder = "⚠️ Gagal mencari judul buku";
+                  }
+                });
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching book data:", err);
+            judulInput.value = "⚠️ Gagal mengambil judul";
+          });
+      }
+
+      html5QrcodeScanner.stop().then(() => {
+        modal.classList.add("hidden");
+        html5QrcodeScanner.clear();
+        html5QrcodeScanner = null;
+      });
+    }
+  }
+
+  scanBtn?.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      onScanSuccess,
+      (err) => console.warn("QR Error", err)
+    );
+  });
+
+  stopScan?.addEventListener("click", () => {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.stop().then(() => {
+        html5QrcodeScanner.clear();
+        modal.classList.add("hidden");
+        html5QrcodeScanner = null;
+      });
+    }
+  });
+  
+  closeScan?.addEventListener("click", () => {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.stop().then(() => {
+        html5QrcodeScanner.clear();
+        modal.classList.add("hidden");
+        html5QrcodeScanner = null;
+      });
+    }
+  });
+}
+
+pinjamSelect.addEventListener("change", function () {
+  const isPinjam = this.value === "true";
+  pinjamFields.classList.toggle("hidden", !isPinjam);
+  if (isPinjam) generatePinjamFields();
+  else pinjamFields.innerHTML = "";
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  pinjamSelect.dispatchEvent(new Event("change"));
+});
+
+const now = new Date();
+const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+document.getElementById("today").textContent = now.toLocaleDateString('id-ID', options);
+</script>
   </body>
 </html>

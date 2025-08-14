@@ -10,7 +10,7 @@ $routes = [
   ],
   [
     "label" => "Pengunjung",
-    "path" => "/apps/pengunjung.php",
+    "path" => "/apps",
     "icon" => "fa-solid fa-users"
   ],
   [
